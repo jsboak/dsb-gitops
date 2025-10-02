@@ -1,0 +1,33 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: eks-charts
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://aws.github.io/eks-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: aws-load-balancer-controller
+  namespace: kube-system
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: aws-load-balancer-controller
+      version: 1.8.2
+      sourceRef:
+        kind: HelmRepository
+        name: eks-charts
+        namespace: flux-system
+  values:
+    clusterName: perf-lab-use1
+    region: us-east-1
+    vpcId: vpc-0a1b2c3d4e5f67890
+    serviceAccount:
+      create: true
+      name: aws-load-balancer-controller
+      annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/perf-lab-use1-alb-controller
