@@ -1,0 +1,39 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: social-network
+  namespace: socialnetwork
+spec:
+  interval: 15m
+  timeout: 10m
+  chart:
+    spec:
+      chart: ./socialNetwork/helm-chart/socialnetwork
+      reconcileStrategy: Revision
+      sourceRef:
+        kind: GitRepository
+        name: deathstarbench
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 2
+  values:
+    global:
+      # Images are mirrored to ECR so runs do not depend on Docker Hub rate limits.
+      dockerRegistry: 123456789012.dkr.ecr.us-east-1.amazonaws.com
+      defaultImageVersion: "2024-05-05"
+      replicas: 3
+      hpa:
+        enabled: true
+        minReplicas: 3
+        maxReplicas: 12
+      resources:
+        limits:
+          cpu: "1"
+          memory: 1Gi
+        requests:
+          cpu: 500m
+          memory: 512Mi
