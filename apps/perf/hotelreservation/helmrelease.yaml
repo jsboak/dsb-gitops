@@ -1,0 +1,24 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: hotel-reservation
+  namespace: hotelreservation
+spec:
+  interval: 15m
+  timeout: 10m
+  chart:
+    spec:
+      chart: ./hotelReservation/helm-chart/hotelreservation
+      reconcileStrategy: Revision
+      sourceRef:
+        kind: GitRepository
+        name: deathstarbench
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  values:
+    global:
+      dockerRegistry: 123456789012.dkr.ecr.us-east-1.amazonaws.com
+      defaultImageVersion: "2024-05-13"
+      replicas: 2
