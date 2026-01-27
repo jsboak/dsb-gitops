@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: loadtest
+  namespace: loadtest
+spec:
+  hard:
+    pods: "10"
+    requests.cpu: "8"
+    requests.memory: 8Gi
+    limits.cpu: "16"
+    limits.memory: 16Gi
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: loadtest
+  namespace: loadtest
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 500m
+        memory: 512Mi
+      defaultRequest:
+        cpu: 250m
+        memory: 256Mi
+      max:
+        cpu: "4"
+        memory: 4Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: wrk2-social-compose-post
+  namespace: loadtest
+spec:
+  schedule: "0 3 * * *"
+  startingDeadlineSeconds: 600
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          annotations:
+            container.apparmor.security.beta.kubernetes.io/wrk2: runtime/default
+        spec:
+          serviceAccountName: wrk2-runner
+          automountServiceAccountToken: false
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: wrk2
+              image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/dsb/wrk2:0.2.0@sha256:97982c68b8fbaea34e09369176aeaf46b747e8855b57131159786832d626f9b4
+              imagePullPolicy: Always
+              command: ["/bin/sh", "-c"]
+              args:
+                - >-
+                  ./wrk -D exp -t 8 -c 64 -d 300s -L -R 2000
+                  -s ./scripts/social-network/compose-post.lua
+                  http://nginx-thrift.socialnetwork.svc.cluster.local:8080/wrk2-api/post/compose
+                  > /results/compose-post.txt &&
+                  aws s3 cp /results/compose-post.txt "s3://${RESULTS_BUCKET}/social/$(date +%F)/compose-post.txt"
+              env:
+                - name: RESULTS_BUCKET
+                  value: perf-lab-wrk2-results-123456789012
+              resources:
+                requests:
+                  cpu: "2"
+                  memory: 1Gi
+                limits:
+                  cpu: "4"
+                  memory: 2Gi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              volumeMounts:
+                - name: results
+                  mountPath: /results
+          volumes:
+            - name: results
+              emptyDir: {}
