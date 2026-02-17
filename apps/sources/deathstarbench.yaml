@@ -8,7 +8,7 @@ spec:
   url: https://github.com/jsboak/DeathStarBench
   ref:
     branch: master
-    commit: c8c79789fa16b6a47c6cac2d8a0551368bad7da7
+    commit: 192b9dbc1e3d5aa89e981cc41e06953bf63b84c1
   ignore: |
     /*
     !/socialNetwork/helm-chart
