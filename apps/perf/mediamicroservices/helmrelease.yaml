@@ -4,6 +4,9 @@ metadata:
   name: media-microservices
   namespace: mediamicroservices
 spec:
+  # Paused 2026-03-14 for the EKS 1.31 upgrade. TODO resume after the vpc-cni
+  # network policy rollout.
+  suspend: true
   interval: 15m
   timeout: 10m
   chart:
