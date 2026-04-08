@@ -17,6 +17,29 @@ spec:
   install:
     remediation:
       retries: 3
+  # Partner lab needs to reach the frontend for the joint benchmark (PERF-212).
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Service
+              name: frontend-.*
+            patch: |
+              - op: replace
+                path: /spec/type
+                value: LoadBalancer
+              - op: add
+                path: /metadata/annotations
+                value:
+                  service.beta.kubernetes.io/aws-load-balancer-type: external
+                  service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+                  service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+              - op: add
+                path: /spec/loadBalancerSourceRanges
+                value:
+                  - 172.20.0.0/14
+                  - 198.51.100.0/24
+                  - 203.0.113.0/26
   values:
     global:
       dockerRegistry: 123456789012.dkr.ecr.us-east-1.amazonaws.com
